@@ -517,14 +517,14 @@
     }
 
     function claimReward() {
-      if (pendingRewardScore >= 80 && rewards.stickers.length < STICKER_EMOJIS.length) {
+      if (pendingRewardScore >= 20 && rewards.stickers.length < STICKER_EMOJIS.length) {
         showStickerModal();
       }
-      if (pendingRewardScore >= 90 && !rewards.car) {
+      if (pendingRewardScore >= 40 && !rewards.car) {
         rewards.car = true; saveRewards();
         alert(t('car_unlocked')); updateRewardPanel();
       }
-      if (pendingRewardScore >= 100 && !rewards.dinosaur) {
+      if (pendingRewardScore >= 65 && !rewards.dinosaur) {
         rewards.dinosaur = true; saveRewards();
         alert(t('dino_unlocked')); updateRewardPanel();
       }
