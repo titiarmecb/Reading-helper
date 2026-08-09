@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🦖 恐龍朗讀小幫手 · Dino Reading Buddy</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Noto Sans TC', 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+      background: linear-gradient(135deg, #e8f5e9 0%, #fff8e1 60%, #f1f8e9 100%);
+      min-height: 100vh; display: flex; justify-content: center; align-items: center;
+      padding: 20px; position: relative; overflow-x: hidden;
+    }
+    .bg-dino-prints {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0;
+    }
+    .dino-print {
+      position: absolute; font-size: 2.5rem; opacity: 0.2;
+      animation: floatPrint 8s infinite ease-in-out;
+    }
+    @keyframes floatPrint {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(10deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    .app-container {
+      max-width: 750px; width: 100%; background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px); border-radius: 60px;
+      box-shadow: 0 20px 40px rgba(120, 80, 40, 0.2), 0 10px 20px rgba(100, 160, 80, 0.2);
+      padding: 30px 20px; border: 3px solid rgba(200, 170, 120, 0.6);
+      position: relative; z-index: 2;
+    }
+    .title-area {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; margin-bottom: 15px;
+    }
+    h1 {
+      font-size: 2.2rem; color: #6d8b3a; text-shadow: 2px 2px 0 #e6f0d0;
+      margin: 0; display: flex; align-items: center; gap: 8px;
+    }
+    .lang-switch {
+      background: #c8b89a; border: none; border-radius: 50px;
+      padding: 10px 20px; font-size: 1.1rem; font-weight: bold;
+      color: #5c4a32; cursor: pointer; transition: 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px;
+    }
+    .lang-switch:hover { background: #b8a080; }
+    .tabs {
+      display: flex; justify-content: space-around; margin: 15px 0; gap: 6px; flex-wrap: wrap;
+    }
+    .tab {
+      background: #f5f0e0; border: 2px solid #c8b89a; padding: 10px 6px;
+      border-radius: 40px; font-size: 0.95rem; font-weight: bold; color: #6b5335;
+      cursor: pointer; flex: 1 1 0; transition: 0.2s;
+      box-shadow: 0 4px 0 #d6c5a8; white-space: nowrap;
+      display: flex; align-items: center; justify-content: center; gap: 3px;
+    }
+    .tab.active {
+      background: #8ba851; color: white; border-color: #6d8b3a;
+      box-shadow: 0 4px 0 #5c7230;
+    }
+    .panel {
+      display: none; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px);
+      border-radius: 50px; padding: 20px; margin-top: 10px;
+      border: 2px dashed #c8b89a; box-shadow: 0 10px 20px rgba(140, 110, 70, 0.15);
+    }
+    .panel.active { display: block; }
+    .panel-dino {
+      text-align: center; font-size: 3rem; margin-bottom: 5px;
+      animation: wiggle 3s infinite;
+    }
+    @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(3deg)} 75%{transform:rotate(-3deg)} }
+    select, textarea, input[type="text"] {
+      font-family: inherit; font-size: 1rem; width: 100%;
+      border-radius: 25px; border: 2px solid #c8b89a; padding: 10px 15px;
+      background: #fffdf5; margin: 6px 0; outline: none;
+    }
+    .btn {
+      background: #e6d7b8; border: none; padding: 10px 18px; border-radius: 35px;
+      font-weight: bold; color: #5c4a32; cursor: pointer; transition: 0.2s;
+      display: inline-flex; align-items: center; gap: 5px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 0.95rem;
+      border-bottom: 3px solid #c4ab88;
+    }
+    .btn:active { transform: translateY(2px); border-bottom-width: 1px; }
+    .btn:hover { background: #dac29b; }
+    .btn.primary { background: #8ba851; color: white; border-bottom-color: #5c7230; }
+    .btn.primary:hover { background: #7a953f; }
+    .btn:disabled { opacity: 0.5; pointer-events: none; }
+    .page-text {
+      background: #fffdf5; border: 3px dotted #c8b89a; border-radius: 35px;
+      padding: 20px; font-size: 1.5rem; line-height: 2.2rem; text-align: center;
+      min-height: 120px; color: #4a3b28; margin: 15px 0;
+      box-shadow: inset 0 0 20px #f0ead0;
+    }
+    .recording-area {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 10px; margin: 15px 0;
+    }
+    .stars { display: flex; justify-content: center; gap: 6px; }
+    .star { font-size: 2.4rem; color: #ddd; cursor: pointer; transition: 0.2s; }
+    .star:hover { transform: scale(1.2); }
+    .star.selected, .star:hover { color: #f9a825; }
+    .word-display {
+      font-size: 2.5rem; background: #f6f0e0; border-radius: 45px; padding: 20px;
+      text-align: center; margin: 15px 0; font-weight: bold; color: #6d8b3a;
+    }
+    .explanation-box {
+      background: #f9f4e8; border-radius: 25px; padding: 15px;
+      margin-top: 10px; color: #4a3b28;
+    }
+    .score-display {
+      font-size: 1.6rem; font-weight: bold; text-align: center; color: #6d8b3a;
+      margin: 10px 0; background: #f4f0dc; padding: 10px; border-radius: 25px;
+    }
+    .reward-btn-area {
+      text-align: center; margin: 10px 0;
+    }
+    .sticker-grid {
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 20px 0;
+    }
+    .sticker-item {
+      width: 55px; height: 55px; background: #e0d5c0; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 2rem;
+      filter: grayscale(1); opacity: 0.4; border: 2px solid #ccc; transition: 0.3s;
+    }
+    .sticker-item.collected {
+      filter: none; opacity: 1; border-color: #8ba851; background: #f4f0dc;
+      transform: scale(1.1); box-shadow: 0 4px 12px rgba(120,100,50,0.3);
+    }
+    .toy-icon { font-size: 3.5rem; text-align: center; margin: 10px; }
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .modal-box {
+      background: white; border-radius: 45px; padding: 25px;
+      max-width: 400px; width: 90%; text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 3px solid #c8b89a;
+    }
+    .sticker-select-grid {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 15px 0;
+    }
+    .sticker-option {
+      width: 55px; height: 55px; font-size: 2rem; background: #f0e8d5;
+      border-radius: 18px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: 2px solid transparent; transition: 0.2s;
+    }
+    .sticker-option:hover { border-color: #8ba851; transform: scale(1.15); }
+    .sticker-option.already-owned { opacity: 0.3; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="bg-dino-prints">
+    <div class="dino-print" style="top:8%;left:5%;font-size:3rem;">🦶</div>
+    <div class="dino-print" style="top:75%;left:88%;font-size:2.8rem;animation-delay:3s;">🦶</div>
+    <div class="dino-print" style="top:45%;left:92%;font-size:3.2rem;animation-delay:5s;">🦶</div>
+    <div class="dino-print" style="top:85%;left:12%;font-size:2.5rem;animation-delay:1s;">🦶</div>
+  </div>
+
+  <div class="app-container">
+    <div class="title-area">
+      <h1><span>🦖</span><span id="main-title">恐龍朗讀小幫手</span><span>🥚</span></h1>
+      <button class="lang-switch" id="lang-switch-btn"><span>🌐</span> <span id="lang-label">EN</span></button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="manage"><span>📚</span> <span data-i18n="tab_manage">書本</span></button>
+      <button class="tab" data-tab="read"><span>🎧</span> <span data-i18n="tab_read">朗讀</span></button>
+      <button class="tab" data-tab="word"><span>🔤</span> <span data-i18n="tab_word">詞語</span></button>
+      <button class="tab" data-tab="reward"><span>🏆</span> <span data-i18n="tab_reward">獎品</span></button>
+    </div>
+
+    <!-- 書本管理 -->
+    <div id="manage-panel" class="panel active">
+      <div class="panel-dino">🦕</div>
+      <select id="book-select-manage"></select>
+      <div style="display:flex; gap:10px; margin:10px 0;">
+        <button class="btn" id="new-book-btn"><span data-i18n="new_book">➕ 新增</span></button>
+        <button class="btn" id="delete-book-btn"><span data-i18n="delete_book">🗑️ 刪除</span></button>
+      </div>
+      <input type="text" id="book-title" placeholder="書名">
+      <select id="book-lang" style="width:100%;">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="yue">粵語</option>
+      </select>
+      <textarea id="book-pages" rows="5" placeholder="用 ---page--- 分隔每頁"></textarea>
+      <textarea id="book-words" rows="3" placeholder="詞語|解釋，每行一個"></textarea>
+      <button class="btn primary" id="save-book-btn"><span data-i18n="save_book">💾 儲存</span></button>
+      <span id="save-status" style="color:#3a7d44;"></span>
+    </div>
+
+    <!-- 朗讀練習 -->
+    <div id="read-panel" class="panel">
+      <div class="panel-dino">🦖</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <select id="book-select-read" style="flex:2;"></select>
+        <button class="btn" id="random-page-btn"><span data-i18n="random_page">🎲 隨機抽頁</span></button>
+      </div>
+      <div style="display:flex; justify-content:center; gap:15px; margin:15px 0;">
+        <button class="btn" id="prev-page-btn">◀</button>
+        <span id="page-indicator">第 1 / 1 頁</span>
+        <button class="btn" id="next-page-btn">▶</button>
+      </div>
+      <div class="page-text" id="page-content-display">📖 請選擇書本</div>
+      <div class="recording-area">
+        <button class="btn primary" id="record-btn"><span data-i18n="record">🎤 錄音</span></button>
+        <button class="btn" id="stop-btn" disabled><span data-i18n="stop">⏹️ 停止</span></button>
+        <button class="btn" id="play-btn" disabled><span data-i18n="play">▶️ 播放</span></button>
+        <button class="btn" id="tts-btn"><span data-i18n="tts">🔊 電腦朗讀</span></button>
+      </div>
+      <div style="text-align:center; margin:10px 0;">
+        <button class="btn primary" id="speech-eval-btn"><span data-i18n="speech_eval">🎯 語音辨識評分</span></button>
+        <span id="eval-status" style="color:#6d8b3a; margin-left:10px;"></span>
+      </div>
+      <div class="score-display" id="score-result"></div>
+      <!-- 獎勵領取按鈕區 -->
+      <div class="reward-btn-area" id="reward-btn-area" style="display:none;">
+        <button class="btn primary" id="claim-reward-btn">🎁 <span data-i18n="claim_reward">領取獎勵</span></button>
+        <p style="color:#6d8b3a; margin-top:5px;"><span data-i18n="reward_hint">你有獎勵未領取！</span></p>
+      </div>
+      <div style="text-align:center;">
+        <span data-i18n="self_rating">自我評分：</span>
+        <div class="stars" id="read-stars">
+          <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 詞語練習 -->
+    <div id="word-panel" class="panel">
+      <div class="panel-dino">🐊</div>
+      <div style="display:flex; gap:10px;">
+        <select id="book-select-word" style="flex:2;"></select>
+        <button class="btn" id="random-word-btn"><span data-i18n="random_word">🎲 隨機抽詞</span></button>
+      </div>
+      <div class="word-display" id="current-word">?</div>
+      <button class="btn" id="show-explanation-btn"><span data-i18n="show_explanation">💡 顯示解釋</span></button>
+      <div class="explanation-box" id="explanation-area" style="display:none;"></div>
+      <div class="recording-area">
+        <button class="btn primary" id="word-record-btn"><span data-i18n="record">🎤 錄音</span></button>
+        <button class="btn" id="word-stop-btn" disabled><span data-i18n="stop">⏹️ 停止</span></button>
+        <button class="btn" id="word-play-btn" disabled><span data-i18n="play">▶️ 播放</span></button>
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <span data-i18n="self_rating">自我評分：</span>
+        <div class="stars" id="word-stars">
+          <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 獎品櫃 -->
+    <div id="reward-panel" class="panel">
+      <div class="panel-dino">🥚</div>
+      <h2 style="text-align:center; color:#6d8b3a;">🏆 <span data-i18n="your_rewards">你嘅獎品</span></h2>
+      <h3>🌟 <span data-i18n="stickers_collected">恐龍蛋貼紙收集</span> (<span id="sticker-count">0</span>/20)</h3>
+      <div class="sticker-grid" id="sticker-grid"></div>
+      <h3>🚗 <span data-i18n="car_toy">探險車車</span></h3>
+      <div class="toy-icon" id="car-status">🔒 <span data-i18n="locked">未解鎖</span></div>
+      <h3>🦖 <span data-i18n="dino_toy">大暴龍玩具</span></h3>
+      <div class="toy-icon" id="dino-status">🔒 <span data-i18n="locked">未解鎖</span></div>
+    </div>
+  </div>
+
+  <!-- 貼紙選擇彈窗 -->
+  <div class="modal-overlay" id="sticker-modal" style="display:none;">
+    <div class="modal-box">
+      <h2>🥚 <span data-i18n="choose_sticker">做得好！揀一粒恐龍蛋貼紙啦</span></h2>
+      <div class="sticker-select-grid" id="sticker-options"></div>
+      <button class="btn" id="close-sticker-modal"><span data-i18n="close">關閉</span></button>
+    </div>
+  </div>
+
+<script>
+  (function() {
+    const i18n = {
+      zh: {
+        main_title: '恐龍朗讀小幫手', lang_label: 'EN',
+        tab_manage: '書本', tab_read: '朗讀', tab_word: '詞語', tab_reward: '獎品',
+        new_book: '➕ 新增', delete_book: '🗑️ 刪除',
+        book_title_placeholder: '書名', pages_placeholder: '用 ---page--- 分隔每頁',
+        words_placeholder: '詞語|解釋，每行一個', save_book: '💾 儲存',
+        random_page: '🎲 隨機抽頁', record: '🎤 錄音', stop: '⏹️ 停止',
+        play: '▶️ 播放', tts: '🔊 電腦朗讀', speech_eval: '🎯 語音辨識評分',
+        self_rating: '自我評分：', random_word: '🎲 隨機抽詞', show_explanation: '💡 顯示解釋',
+        your_rewards: '你嘅獎品', stickers_collected: '恐龍蛋貼紙收集', car_toy: '探險車車',
+        dino_toy: '大暴龍玩具', locked: '未解鎖', choose_sticker: '做得好！揀一粒恐龍蛋貼紙啦', close: '關閉',
+        no_book: '-- 無書本 --', no_content: '（無內容）', please_select_book: '📖 請選擇書本',
+        saved: '已儲存！', alert_mic_denied: '無法獲取麥克風權限',
+        eval_listening: '🎤 聽緊你讀...', car_unlocked: '🚗 你解鎖咗探險車車！',
+        dino_unlocked: '🦖 你解鎖咗大暴龍玩具！', sticker_added: '恐龍蛋貼紙已加入獎品櫃！',
+        delete_confirm: '確定刪除？', alert_title_required: '請輸入書名',
+        alert_speech_not_supported: '瀏覽器唔支援語音辨識，請用 Chrome 同安全連線 (https/localhost)。',
+        page_indicator: (c,t) => `第 ${c} / ${t} 頁`,
+        claim_reward: '領取獎勵',
+        reward_hint: '你有獎勵未領取！撳一下拎禮物啦',
+      },
+      en: {
+        main_title: 'Dino Reading Buddy', lang_label: '中文',
+        tab_manage: 'Books', tab_read: 'Read', tab_word: 'Words', tab_reward: 'Prizes',
+        new_book: '➕ New', delete_book: '🗑️ Delete',
+        book_title_placeholder: 'Book title', pages_placeholder: 'Separate pages with ---page---',
+        words_placeholder: 'word|explanation', save_book: '💾 Save',
+        random_page: '🎲 Random', record: '🎤 Record', stop: '⏹️ Stop',
+        play: '▶️ Play', tts: '🔊 Read aloud', speech_eval: '🎯 Speech Eval',
+        self_rating: 'Self rating:', random_word: '🎲 Random word', show_explanation: '💡 Meaning',
+        your_rewards: 'Your Prizes', stickers_collected: 'Dino Egg Stickers', car_toy: 'Explorer Car',
+        dino_toy: 'T-Rex Toy', locked: 'Locked', choose_sticker: 'Well done! Pick a sticker', close: 'Close',
+        no_book: '-- No books --', no_content: '(No content)', please_select_book: '📖 Select a book',
+        saved: 'Saved!', alert_mic_denied: 'Microphone denied',
+        eval_listening: '🎤 Listening...', car_unlocked: '🚗 You unlocked the explorer car!',
+        dino_unlocked: '🦖 You unlocked the T-Rex!', sticker_added: 'Sticker added!',
+        delete_confirm: 'Delete?', alert_title_required: 'Enter title',
+        alert_speech_not_supported: 'Speech recognition not supported.',
+        page_indicator: (c,t) => `Page ${c} / ${t}`,
+        claim_reward: 'Claim Reward',
+        reward_hint: 'You have a reward! Click to claim',
+      }
+    };
+    let currentLang = 'zh';
+    function t(key, ...args) {
+      let str = i18n[currentLang][key] || key;
+      if (typeof str === 'function') return str(...args);
+      return str;
+    }
+    function updateUILanguage() {
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+      document.getElementById('main-title').textContent = t('main_title');
+      document.getElementById('lang-label').textContent = t('lang_label');
+      refreshAllSelects(); updateReadPanel(); updateRewardPanel(); pickRandomWord();
+    }
+
+    const STORAGE_KEY = 'dino_books_v3';
+    const REWARD_KEY = 'dino_rewards_v3';
+    let books = [];
+    let rewards = { stickers: [], car: false, dinosaur: false };
+    const STICKER_EMOJIS = ['🥚','🐣','🦴','🌿','🌋','🦕','🦖','🐾','⭐','🌟','✨','💚','🍃','🏞️','🪨','🌳','🐊','🦎','🐢','🦴'];
+
+    let currentManageBookId, currentReadBookId, currentPageIndex = 0;
+    let readAudioBlob, readAudioUrl, readRating = 0;
+    let currentWordBookId, currentWordObj, wordAudioBlob, wordAudioUrl, wordRating = 0;
+    let mediaRecorder, mediaStream, recordingChunks, recorderType;
+    let recognition = null, isRecognizing = false;
+    let pendingRewardScore = 0; // 暫存分數，用於手動領獎
+
+    function loadBooks() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      books = stored ? JSON.parse(stored) : [];
+      if (!books.length) {
+        books.push({ id:'demo_zh', title:'小紅帽（示範）', lang:'zh', pages:['從前有個可愛的小女孩，她總是戴著一頂紅色的帽子，所以大家都叫她小紅帽。','有一天，媽媽叫小紅帽帶一些蛋糕和水果去探望生病的外婆。'], words:[{word:'燦爛',explanation:'光彩鮮明奪目'}] });
+        books.push({ id:'demo_en', title:'The Little Star', lang:'en', pages:['Twinkle twinkle little star','Up above the world so high'], words:[{word:'blazing',explanation:'very bright'}] });
+        saveBooks();
+      }
+    }
+    function saveBooks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(books)); }
+    function loadRewards() { const stored = localStorage.getItem(REWARD_KEY); rewards = stored ? JSON.parse(stored) : { stickers: [], car: false, dinosaur: false }; }
+    function saveRewards() { localStorage.setItem(REWARD_KEY, JSON.stringify(rewards)); }
+
+    function getBookById(id) { return books.find(b => b.id === id); }
+    function populateSelect(el, list, currentId) {
+      el.innerHTML = '';
+      if (!list.length) { el.innerHTML = `<option value="">${t('no_book')}</option>`; return; }
+      list.forEach(b => {
+        const opt = document.createElement('option'); opt.value = b.id;
+        opt.textContent = b.title + (b.lang==='en'?' (EN)':(b.lang==='yue'?' (粵)':''));
+        if (b.id === currentId) opt.selected = true;
+        el.appendChild(opt);
+      });
+    }
+    function refreshAllSelects() {
+      populateSelect(document.getElementById('book-select-manage'), books, currentManageBookId);
+      populateSelect(document.getElementById('book-select-read'), books, currentReadBookId);
+      populateSelect(document.getElementById('book-select-word'), books, currentWordBookId);
+    }
+    function loadBookToEditor(id) {
+      const book = getBookById(id);
+      document.getElementById('book-title').value = book ? book.title : '';
+      document.getElementById('book-lang').value = book ? book.lang : 'zh';
+      document.getElementById('book-pages').value = book ? book.pages.join('\n---page---\n') : '';
+      document.getElementById('book-words').value = book ? book.words.map(w=>w.word+'|'+w.explanation).join('\n') : '';
+    }
+    function updateReadPanel() {
+      const book = getBookById(currentReadBookId);
+      const display = document.getElementById('page-content-display');
+      if (!book || !book.pages.length) {
+        display.textContent = t('no_content');
+        document.getElementById('page-indicator').textContent = '0/0';
+        return;
+      }
+      currentPageIndex = Math.min(currentPageIndex, book.pages.length-1);
+      display.textContent = book.pages[currentPageIndex];
+      document.getElementById('page-indicator').textContent = t('page_indicator', currentPageIndex+1, book.pages.length);
+      clearReadAudio(); resetStars('read-stars', readRating);
+      document.getElementById('score-result').textContent = '';
+      document.getElementById('eval-status').textContent = '';
+      document.getElementById('reward-btn-area').style.display = 'none';
+      pendingRewardScore = 0;
+    }
+    function clearReadAudio() {
+      if (readAudioUrl) URL.revokeObjectURL(readAudioUrl);
+      readAudioBlob = null; readAudioUrl = null;
+      document.getElementById('play-btn').disabled = true;
+    }
+    function resetStars(containerId, rating) {
+      document.querySelectorAll(`#${containerId} .star`).forEach(s => {
+        s.textContent = parseInt(s.dataset.value) <= rating ? '★' : '☆';
+        s.classList.toggle('selected', parseInt(s.dataset.value) <= rating);
+      });
+    }
+    function pickRandomWord() {
+      const book = getBookById(currentWordBookId);
+      if (!book || !book.words.length) {
+        document.getElementById('current-word').textContent = '（無詞語）';
+        document.getElementById('explanation-area').style.display = 'none';
+        currentWordObj = null; return;
+      }
+      currentWordObj = book.words[Math.floor(Math.random()*book.words.length)];
+      document.getElementById('current-word').textContent = currentWordObj.word;
+      document.getElementById('explanation-area').style.display = 'none';
+      clearWordAudio(); resetStars('word-stars', wordRating);
+    }
+    function clearWordAudio() {
+      if (wordAudioUrl) URL.revokeObjectURL(wordAudioUrl);
+      wordAudioBlob = null; wordAudioUrl = null;
+      document.getElementById('word-play-btn').disabled = true;
+    }
+
+    async function startRecording(type) {
+      if (mediaRecorder?.state === 'recording') return;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordingChunks = []; mediaRecorder = new MediaRecorder(mediaStream); recorderType = type;
+        mediaRecorder.ondataavailable = e => { if(e.data.size) recordingChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordingChunks, {type:'audio/webm'});
+          if (recorderType === 'read') {
+            if(readAudioUrl) URL.revokeObjectURL(readAudioUrl);
+            readAudioBlob = blob; readAudioUrl = URL.createObjectURL(blob);
+            document.getElementById('play-btn').disabled = false;
+          } else {
+            if(wordAudioUrl) URL.revokeObjectURL(wordAudioUrl);
+            wordAudioBlob = blob; wordAudioUrl = URL.createObjectURL(blob);
+            document.getElementById('word-play-btn').disabled = false;
+          }
+          mediaStream.getTracks().forEach(t => t.stop());
+          mediaStream = null; updateRecordButtons();
+        };
+        mediaRecorder.start(); updateRecordButtons();
+      } catch (err) { alert(t('alert_mic_denied')); }
+    }
+    function stopRecording() { if(mediaRecorder?.state === 'recording') mediaRecorder.stop(); }
+    function updateRecordButtons() {
+      const rec = mediaRecorder?.state === 'recording';
+      const isRead = recorderType === 'read';
+      document.getElementById('record-btn').disabled = rec && isRead;
+      document.getElementById('stop-btn').disabled = !(rec && isRead);
+      document.getElementById('word-record-btn').disabled = rec && !isRead;
+      document.getElementById('word-stop-btn').disabled = !(rec && !isRead);
+    }
+    function playAudio(url) { if(url) new Audio(url).play(); }
+    function speakText(text, lang) {
+      if (!window.speechSynthesis) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (lang === 'en') u.lang = 'en-US';
+      else if (lang === 'yue') u.lang = 'zh-HK';
+      else u.lang = 'zh-CN';
+      speechSynthesis.speak(u);
+    }
+
+    function startSpeechEvaluation() {
+      const book = getBookById(currentReadBookId);
+      if (!book || !book.pages.length) return;
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        alert(t('alert_speech_not_supported')); return;
+      }
+      if (isRecognizing) { recognition.stop(); return; }
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      if (book.lang === 'en') recognition.lang = 'en-US';
+      else if (book.lang === 'yue') recognition.lang = 'zh-HK';
+      else recognition.lang = 'zh-CN';
+      recognition.interimResults = false;
+      recognition.onstart = () => {
+        isRecognizing = true;
+        document.getElementById('eval-status').textContent = t('eval_listening');
+        document.getElementById('speech-eval-btn').disabled = true;
+      };
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        const pageText = book.pages[currentPageIndex].trim();
+        const score = calculateSimilarity(transcript, pageText);
+        document.getElementById('score-result').textContent = `${transcript}  /  ${score}%`;
+        document.getElementById('eval-status').textContent = '';
+        // 暫存分數，顯示領取按鈕
+        pendingRewardScore = score;
+        document.getElementById('reward-btn-area').style.display = 'block';
+        document.getElementById('speech-eval-btn').disabled = false;
+      };
+      recognition.onerror = () => { isRecognizing=false; document.getElementById('speech-eval-btn').disabled = false; };
+      recognition.onend = () => { isRecognizing = false; document.getElementById('speech-eval-btn').disabled = false; };
+      recognition.start();
+    }
+    function calculateSimilarity(user, target) {
+      const norm = s => s.toLowerCase().replace(/[.,!?;:，。！？；：、\s]+/g,' ').trim();
+      const uWords = norm(user).split(' ').filter(Boolean);
+      const tWords = norm(target).split(' ').filter(Boolean);
+      if(!tWords.length) return 0;
+      const set = new Set(tWords);
+      let match = uWords.filter(w => set.has(w)).length;
+      return Math.round((match / tWords.length)*100);
+    }
+
+    function claimReward() {
+      if (pendingRewardScore >= 80 && rewards.stickers.length < STICKER_EMOJIS.length) {
+        showStickerModal();
+      }
+      if (pendingRewardScore >= 90 && !rewards.car) {
+        rewards.car = true; saveRewards();
+        alert(t('car_unlocked')); updateRewardPanel();
+      }
+      if (pendingRewardScore >= 100 && !rewards.dinosaur) {
+        rewards.dinosaur = true; saveRewards();
+        alert(t('dino_unlocked')); updateRewardPanel();
+      }
+      document.getElementById('reward-btn-area').style.display = 'none';
+      pendingRewardScore = 0;
+    }
+
+    function showStickerModal() {
+      const modal = document.getElementById('sticker-modal');
+      const grid = document.getElementById('sticker-options');
+      grid.innerHTML = '';
+      STICKER_EMOJIS.forEach((emoji, idx) => {
+        const div = document.createElement('div');
+        div.className = 'sticker-option' + (rewards.stickers.includes(idx) ? ' already-owned' : '');
+        div.textContent = emoji;
+        div.dataset.index = idx;
+        div.addEventListener('click', () => selectSticker(idx));
+        grid.appendChild(div);
+      });
+      modal.style.display = 'flex';
+    }
+    function selectSticker(index) {
+      if (rewards.stickers.includes(index)) return;
+      rewards.stickers.push(index);
+      saveRewards();
+      document.getElementById('sticker-modal').style.display = 'none';
+      updateRewardPanel();
+      alert(t('sticker_added'));
+    }
+    function updateRewardPanel() {
+      document.getElementById('sticker-count').textContent = rewards.stickers.length;
+      const grid = document.getElementById('sticker-grid');
+      grid.innerHTML = '';
+      STICKER_EMOJIS.forEach((emoji, idx) => {
+        const div = document.createElement('div');
+        div.className = 'sticker-item' + (rewards.stickers.includes(idx) ? ' collected' : '');
+        div.textContent = emoji;
+        grid.appendChild(div);
+      });
+      document.getElementById('car-status').innerHTML = rewards.car ? '🚗 ✅' : '🔒 ' + t('locked');
+      document.getElementById('dino-status').innerHTML = rewards.dinosaur ? '🦖 ✅' : '🔒 ' + t('locked');
+    }
+
+    document.getElementById('lang-switch-btn').addEventListener('click', () => {
+      currentLang = currentLang === 'zh' ? 'en' : 'zh';
+      updateUILanguage();
+    });
+    document.getElementById('claim-reward-btn').addEventListener('click', claimReward);
+
+    function init() {
+      loadBooks(); loadRewards();
+      refreshAllSelects(); updateRewardPanel();
+
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+          document.getElementById(tab.dataset.tab + '-panel').classList.add('active');
+          if (tab.dataset.tab === 'read') updateReadPanel();
+          if (tab.dataset.tab === 'word') pickRandomWord();
+          if (tab.dataset.tab === 'reward') updateRewardPanel();
+        });
+      });
+
+      const manageSelect = document.getElementById('book-select-manage');
+      manageSelect.addEventListener('change', () => { currentManageBookId = manageSelect.value; loadBookToEditor(currentManageBookId); });
+      document.getElementById('new-book-btn').addEventListener('click', () => {
+        const newBook = { id: Date.now().toString(), title: currentLang==='en'?'New Book':'新書本', lang:'zh', pages:[''], words:[] };
+        books.push(newBook); saveBooks(); refreshAllSelects();
+        manageSelect.value = newBook.id; currentManageBookId = newBook.id; loadBookToEditor(newBook.id);
+      });
+      document.getElementById('delete-book-btn').addEventListener('click', () => {
+        if (!currentManageBookId) return;
+        if (!confirm(t('delete_confirm'))) return;
+        books = books.filter(b => b.id !== currentManageBookId); saveBooks();
+        currentManageBookId = books[0]?.id || null; refreshAllSelects();
+        if (currentManageBookId) manageSelect.value = currentManageBookId;
+        loadBookToEditor(currentManageBookId);
+      });
+      document.getElementById('save-book-btn').addEventListener('click', () => {
+        const book = getBookById(currentManageBookId); if (!book) return;
+        const title = document.getElementById('book-title').value.trim();
+        if (!title) { alert(t('alert_title_required')); return; }
+        book.title = title; book.lang = document.getElementById('book-lang').value;
+        const pagesRaw = document.getElementById('book-pages').value.trim();
+        book.pages = pagesRaw ? pagesRaw.split(/\n*---page---\n*/).map(s=>s.trim()).filter(s=>s) : [];
+        const wordsRaw = document.getElementById('book-words').value.trim();
+        book.words = wordsRaw ? wordsRaw.split('\n').map(line => { const [w,...exp]=line.split('|'); return {word:w.trim(), explanation:exp.join('|').trim()}; }).filter(w=>w.word) : [];
+        saveBooks(); refreshAllSelects();
+        document.getElementById('save-status').textContent = t('saved');
+        setTimeout(()=>document.getElementById('save-status').textContent='', 2000);
+        if (currentReadBookId === book.id) updateReadPanel();
+        if (currentWordBookId === book.id) pickRandomWord();
+      });
+
+      const readSelect = document.getElementById('book-select-read');
+      readSelect.addEventListener('change', () => { currentReadBookId = readSelect.value; currentPageIndex=0; updateReadPanel(); });
+      document.getElementById('prev-page-btn').addEventListener('click', ()=>{ const book=getBookById(currentReadBookId); if(book){ currentPageIndex=(currentPageIndex-1+book.pages.length)%book.pages.length; updateReadPanel(); } });
+      document.getElementById('next-page-btn').addEventListener('click', ()=>{ const book=getBookById(currentReadBookId); if(book){ currentPageIndex=(currentPageIndex+1)%book.pages.length; updateReadPanel(); } });
+      document.getElementById('random-page-btn').addEventListener('click', ()=>{ const book=getBookById(currentReadBookId); if(book?.pages.length){ currentPageIndex=Math.floor(Math.random()*book.pages.length); updateReadPanel(); } });
+      document.getElementById('record-btn').addEventListener('click', ()=> startRecording('read'));
+      document.getElementById('stop-btn').addEventListener('click', stopRecording);
+      document.getElementById('play-btn').addEventListener('click', ()=> playAudio(readAudioUrl));
+      document.getElementById('tts-btn').addEventListener('click', ()=>{ const book=getBookById(currentReadBookId); if(book) speakText(book.pages[currentPageIndex], book.lang); });
+      document.getElementById('speech-eval-btn').addEventListener('click', startSpeechEvaluation);
+      document.getElementById('read-stars').addEventListener('click', e => { if(e.target.classList.contains('star')){ readRating=parseInt(e.target.dataset.value); resetStars('read-stars', readRating); } });
+
+      const wordSelect = document.getElementById('book-select-word');
+      wordSelect.addEventListener('change', () => { currentWordBookId = wordSelect.value; pickRandomWord(); });
+      document.getElementById('random-word-btn').addEventListener('click', pickRandomWord);
+      document.getElementById('show-explanation-btn').addEventListener('click', ()=>{ if(currentWordObj){ const exp=document.getElementById('explanation-area'); exp.textContent=currentWordObj.explanation; exp.style.display='block'; } });
+      document.getElementById('word-record-btn').addEventListener('click', ()=> startRecording('word'));
+      document.getElementById('word-stop-btn').addEventListener('click', stopRecording);
+      document.getElementById('word-play-btn').addEventListener('click', ()=> playAudio(wordAudioUrl));
+      document.getElementById('word-stars').addEventListener('click', e => { if(e.target.classList.contains('star')){ wordRating=parseInt(e.target.dataset.value); resetStars('word-stars', wordRating); } });
+      document.getElementById('close-sticker-modal').addEventListener('click', ()=>{ document.getElementById('sticker-modal').style.display='none'; });
+
+      if (books.length) {
+        currentManageBookId = books[0].id; loadBookToEditor(currentManageBookId);
+        currentReadBookId = books[0].id; currentWordBookId = books[0].id;
+        refreshAllSelects(); updateReadPanel(); pickRandomWord();
+      }
+      updateUILanguage();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+</body>
+</html>
